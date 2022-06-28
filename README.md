@@ -1,4 +1,4 @@
-# Download link (latest)
+# Download link for v0.84 (latest)
 https://drive.google.com/file/d/1wGjhrXaOV7L_KnJx-yCzS7PuqXvFjvR-/view?usp=sharing
 
 # Note:
