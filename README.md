@@ -5,7 +5,10 @@ This is an ongoing project, I am making an application for windows on behalf of 
 GWT22 is a windows application which allows the user to enter an item ID and then set a price for that item, the application will make periodic API calls to fetch the item price, if the price the user set is met, the user will be emailed a notification.
 
 ## Screenshots
-
+<div>
+  <h5>Main page/Login</h5>
+  <img src="/screenshots/Mainpage.png?raw=true" width="200" height="400"/>
+</div>
 
 
 ### Changes made:
