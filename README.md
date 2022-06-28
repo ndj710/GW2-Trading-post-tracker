@@ -1,3 +1,6 @@
+# Download link (latest)
+https://drive.google.com/file/d/1wGjhrXaOV7L_KnJx-yCzS7PuqXvFjvR-/view?usp=sharing
+
 # Note:
 This is an ongoing project, I am making an application for windows on behalf of a friend. I am experimenting with tkinter and other libraries.
 
