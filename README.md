@@ -1,5 +1,6 @@
-# Download link for v0.84 (latest)
-https://drive.google.com/file/d/1wGjhrXaOV7L_KnJx-yCzS7PuqXvFjvR-/view?usp=sharing
+# Download link for v0.85 (latest)
+If updating from v0.82 or lower, delete all previous files apart from your config. Run the EXE in dist folder.
+https://drive.google.com/file/d/1ixzPoZK1Cpb9q8R96uAKHyl6g-weab0Z/view?usp=sharing
 
 # Note:
 This is an ongoing project, I am making an application for windows on behalf of a friend. I am experimenting with tkinter and other libraries.
