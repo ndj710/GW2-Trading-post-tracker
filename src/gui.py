@@ -3,6 +3,10 @@ import customtkinter
 from tradePostTracker import TradePostTracker
 from PIL import Image, ImageTk
 from loadingSplash import LoadingSplash
+import os
+import sys
+
+__DIR__ = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("blue")
@@ -25,9 +29,9 @@ class Gui(customtkinter.CTk):
         self.itemFrames = []
         self.updatePrices = []
         self.count = 0
-        self.goldImage = ImageTk.PhotoImage(Image.open("images\Gold.png").resize((15,15)))
-        self.silverImage = ImageTk.PhotoImage(Image.open("images\Silver.png").resize((15,15)))
-        self.copperImage = ImageTk.PhotoImage(Image.open("images\Bronze.png").resize((15,15)))
+        self.goldImage = ImageTk.PhotoImage(Image.open(os.path.join(__DIR__, 'images', "Gold.png")).resize((15,15)))
+        self.silverImage = ImageTk.PhotoImage(Image.open(os.path.join(__DIR__, 'images', "Silver.png")).resize((15,15)))
+        self.copperImage = ImageTk.PhotoImage(Image.open(os.path.join(__DIR__, 'images', "Bronze.png")).resize((15,15)))
         self.notiTrue = u"\U0001F514"
         self.notiFalse = u"\U0001F515"        
         self.grid_columnconfigure(1, weight=1)
