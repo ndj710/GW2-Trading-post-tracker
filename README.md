@@ -18,6 +18,7 @@ Changes:
 *	Cleaned up source code
 
 Bug fixes:
+* fix issue if opening without images folder
 *	Issue with notification bell being red when should be green (sometimes)
 
 
@@ -43,11 +44,3 @@ Changes:
 Bug fixes:
 * 	Fixed the ungraceful closing of update thread
 * 	Fixed incorrect price conversion (+- 1 copper)
-
-
-### Changes to implement:
-* Possiblly split itemId data and price data into two different database files
-* Change database population method
-* Fix issue if opening without images folder
-* Add scrollbar
-* Fix placeholder text for target price fields
