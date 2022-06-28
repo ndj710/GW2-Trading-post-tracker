@@ -12,6 +12,15 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 
 
 ### Changes made:
+Version 0.84 Changelog
+
+Changes:
+*	Cleaned up source code
+
+Bug fixes:
+*	Issue with notification bell being red when should be green (sometimes)
+
+
 Version 0.83 Changelog
 
 Changes:

@@ -9,31 +9,13 @@ import configparser
 import traceback
 import email
 import smtplib
-import math
-import tkinter
+from stoppableThread import StoppableThread
 
-
-
-class StoppableThread(threading.Thread):
-    """Thread class with a stop() method. The thread itself has to check
-    regularly for the stopped() condition."""
-
-    def __init__(self,  *args, **kwargs):
-        super(StoppableThread, self).__init__(*args, **kwargs)
-        self._stop_event = threading.Event()
-
-    def stop(self):
-        self._stop_event.set()
-
-    def stopped(self):
-        return self._stop_event.is_set()
 
 class TradePostTracker:
     def __init__(self):
         self.loading = True
         self.threads = []
-        self.notiTrue = u"\U0001F514"
-        self.notiFalse = u"\U0001F515"
         self.error = ''
         self.timer = 10
         self.itemIds = []
@@ -158,6 +140,8 @@ class TradePostTracker:
         
     def sendEmail(self, item):
         try:
+            self.speaker[item[0]].set(u"\U0001F515")
+            self.alertButtons[item[0]].configure(fg_color=("#A7171A"))               
             msg = email.message_from_string('Item {} ({}) has hit the alert threshold'.format(self.itemData[int(item[0])], str(item[0])))
             msg['From'] = self.sender
             msg['To'] = self.receiver
@@ -168,7 +152,7 @@ class TradePostTracker:
             s.ehlo()
             s.login(self.sender, self.password)
             s.sendmail(self.sender, self.receiver, msg.as_string())
-            s.quit()
+            s.quit()         
         except Exception as e:
             self.error = 'Error in TPTsendEmail'
             print(self.error + ' ', e)
@@ -206,21 +190,6 @@ class TradePostTracker:
         except Exception as e:
             self.error = 'Error in TPTgetCurrentPrice'
             print(self.error + ' ', e)
-            
-    def changeMute(self, item, priceGold=None, priceSilver=None, priceCopper=None):
-        if item[2] == '0' or item[2] == 0:
-            priceGold.configure(fg_color='red')
-            priceSilver.configure(fg_color='red')
-            priceCopper.configure(fg_color='red')  
-            self.speaker[item[0]].set(self.notiFalse)
-            self.alertButtons[item[0]].configure(fg_color=("#A7171A"))            
-            return
-        if self.speaker[item[0]].get() == self.notiTrue:
-            self.speaker[item[0]].set(self.notiFalse)
-            self.alertButtons[item[0]].configure(fg_color=("#A7171A"))
-        else: 
-            self.speaker[item[0]].set(self.notiTrue)
-            self.alertButtons[item[0]].configure(fg_color=("#71C562"))
             
     def startUpdate(self):
         self.threads.append(StoppableThread(target=self.getItemPrices))
@@ -263,18 +232,18 @@ class TradePostTracker:
                 for i in self.itemIds:
                     if i != None and i[0] == str(itemId):
                         targetPrice =  int(i[2])
-                        if self.speaker[str(itemId)].get() != self.notiFalse and targetPrice != 0:
+                        print('targetPrice: ', targetPrice)
+                        print(self.speaker[str(itemId)].get())
+                        if self.speaker[str(itemId)].get() != u"\U0001F515" and targetPrice != 0:
                             try:
                                 table_df = pd.read_sql_table(str(itemId), self.engine)
                                 if i[1] == 'buy':
                                     currentPrice = int(df['BuyPrice'][0])
                                     if currentPrice <= targetPrice:
-                                        self.changeMute(i)
                                         self.sendEmail(i)
                                 elif i[1] == 'sell':
                                     currentPrice = int(df['SellPrice'][0])
                                     if currentPrice >= targetPrice:
-                                        self.changeMute(i)
                                         self.sendEmail(i)
                             except Exception as e:
                                 self.error = 'Error in TPTcreateframe inner loop'
