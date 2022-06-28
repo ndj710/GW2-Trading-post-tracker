@@ -12,9 +12,26 @@ import smtplib
 import math
 import tkinter
 
+
+
+class StoppableThread(threading.Thread):
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
+
+    def __init__(self,  *args, **kwargs):
+        super(StoppableThread, self).__init__(*args, **kwargs)
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
+
 class TradePostTracker:
     def __init__(self):
         self.loading = True
+        self.threads = []
         self.notiTrue = u"\U0001F514"
         self.notiFalse = u"\U0001F515"
         self.error = ''
@@ -57,7 +74,7 @@ class TradePostTracker:
             config.read('config.ini')
             if config.sections() == []:
                 config['Configuration'] = {'TIMER': '10', 'ITEMS': '9482|buy|100|f, 24|sell|10|t'}
-                config['Email'] = {'server': 'smtp.office365.com', 'port': '587', 'sender': '', 'password': '', 'receiver': ''}
+                config['Email'] = {'server': 'smtp.office365.com', 'port': 587, 'sender': 'examplesender@hotmail.com', 'password': 'examplepassword', 'receiver': 'examplereceiver@emaildomain.com'}
                 with open('config.ini', 'w') as configfile: config.write(configfile)
             self.timer = int(config['Configuration']['TIMER'])
             confItems = config['Configuration']['ITEMS'].replace(' ', '').split(',')
@@ -141,11 +158,10 @@ class TradePostTracker:
         
     def sendEmail(self, item):
         try:
-            print('sending email')
-            msg = email.message_from_string('Item {} has hit the alert threshold'.format(str(item)))
+            msg = email.message_from_string('Item {} ({}) has hit the alert threshold'.format(self.itemData[int(item[0])], str(item[0])))
             msg['From'] = self.sender
             msg['To'] = self.receiver
-            msg['Subject'] = "Price Alert for: " + str(item)
+            msg['Subject'] = "GW2 {} ({}) PA".format(self.itemData[int(item[0])], str(item[0]))
             s = smtplib.SMTP(self.server,self.port)
             s.ehlo()
             s.starttls()
@@ -159,28 +175,46 @@ class TradePostTracker:
     
     
     def convertPrice(self, price):
-        gold = math.floor(price / 10000)
-        price = (price / 10000 - gold) * 100
-        silver = math.floor(price)
-        price = price - silver
-        copper = math.floor(price * 100)
-        return '{}g {}s {}c'.format(gold, silver, copper)    
+        gold = '0'
+        silver = '0'
+        copper = '0'
+        if len(price) >= 5:
+            gold = price[:-4]
+        if len(price) >= 3:
+            silver = price[-4:-2]
+            if silver[0] == '0':
+                silver = silver[1]
+        if len(price) >= 2:
+            copper = price[-2:]
+            if copper[0] == '0':
+                copper = copper[1]
+        
+        return ('{}g {}s {}c'.format(gold, silver, copper), (gold, silver, copper))  
     
     def getCurrentPrice(self, itemId, table_df):
         try:
-            buy = int(table_df['BuyPrice'][len(table_df)-1])
-            sell = int(table_df['SellPrice'][len(table_df)-1])
+            buy = str(table_df['BuyPrice'][len(table_df)-1])
+            sell = str(table_df['SellPrice'][len(table_df)-1])
             buyPrice = self.convertPrice(buy)
             sellPrice = self.convertPrice(sell)
-            print(itemId, buyPrice, sellPrice)
-            self.currentPrices[str(itemId)][0].set(buyPrice)
-            self.currentPrices[str(itemId)][1].set(sellPrice)
-            print('did the update')
+            self.currentPrices[str(itemId)][0][0].set(buyPrice[1][0])
+            self.currentPrices[str(itemId)][0][1].set(buyPrice[1][1])
+            self.currentPrices[str(itemId)][0][2].set(buyPrice[1][2])
+            self.currentPrices[str(itemId)][1][0].set(sellPrice[1][0])
+            self.currentPrices[str(itemId)][1][1].set(sellPrice[1][1])
+            self.currentPrices[str(itemId)][1][2].set(sellPrice[1][2])
         except Exception as e:
             self.error = 'Error in TPTgetCurrentPrice'
             print(self.error + ' ', e)
             
-    def changeMute(self, item):
+    def changeMute(self, item, priceGold=None, priceSilver=None, priceCopper=None):
+        if item[2] == '0' or item[2] == 0:
+            priceGold.configure(fg_color='red')
+            priceSilver.configure(fg_color='red')
+            priceCopper.configure(fg_color='red')  
+            self.speaker[item[0]].set(self.notiFalse)
+            self.alertButtons[item[0]].configure(fg_color=("#A7171A"))            
+            return
         if self.speaker[item[0]].get() == self.notiTrue:
             self.speaker[item[0]].set(self.notiFalse)
             self.alertButtons[item[0]].configure(fg_color=("#A7171A"))
@@ -189,15 +223,18 @@ class TradePostTracker:
             self.alertButtons[item[0]].configure(fg_color=("#71C562"))
             
     def startUpdate(self):
-        update_thread = threading.Thread(target=self.getItemPrices)
-        update_thread.start()
+        self.threads.append(StoppableThread(target=self.getItemPrices))
+        self.threads[0].start()
     
     def getItemPrices(self):
         while True:
+            if self.threads[0].stopped() == True:
+                print('Thread closed')
+                break        
             try:
+                print('running')
                 time.sleep(self.timer)
                 if self.loading == False:
-                    print('updating')
                     url = 'https://api.guildwars2.com/v2/commerce/prices?ids='
                     for item in self.itemIds:
                         if item != None:
@@ -210,6 +247,9 @@ class TradePostTracker:
     def create_frame(self, data):
         try:
             for item in data:
+                if item == 'text':
+                    print('passing')
+                    continue
                 df = pd.DataFrame([item])
                 date = datetime.now()
                 df['Time'] = date.strftime("%d-%m-%Y, %H:%M:%S")
@@ -233,8 +273,6 @@ class TradePostTracker:
                                         self.sendEmail(i)
                                 elif i[1] == 'sell':
                                     currentPrice = int(df['SellPrice'][0])
-                                    print(i[0], currentPrice, targetPrice)
-                                    print(i[0], self.convertPrice(currentPrice), self.convertPrice(targetPrice))
                                     if currentPrice >= targetPrice:
                                         self.changeMute(i)
                                         self.sendEmail(i)
@@ -247,6 +285,4 @@ class TradePostTracker:
                 df.to_sql(str(itemId), self.engine, if_exists='append', index=False)
                 self.getCurrentPrice(itemId, df)
         except Exception as e:
-            self.error = 'Error in TPTcreateframe'
-            print(self.error + ' ', e)
-            print(traceback.format_exc())
+            pass

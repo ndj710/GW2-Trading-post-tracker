@@ -1,0 +1,3 @@
+Gold: e0b930
+Silver: adaeae
+Bronze: d59f61
