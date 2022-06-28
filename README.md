@@ -6,7 +6,7 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 
 ## Screenshots
 <div>
-  <h5>Main page/Login</h5>
+  <h5>Main page</h5>
   <img src="/screenshots/Mainpage.png?raw=true" width="200" height="400"/>
 </div>
 
