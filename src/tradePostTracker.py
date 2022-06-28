@@ -25,7 +25,7 @@ class TradePostTracker:
         self.sender = ''
         self.password = ''
         self.receiver = ''
-        self.engine = sqlalchemy.create_engine('sqlite:///../itemData.db')
+        self.priceEngine = sqlalchemy.create_engine('sqlite:///../priceData.db')
         self.currentPrices = {}
         self.speaker = {}
         self.alertButtons = {}
@@ -77,67 +77,19 @@ class TradePostTracker:
             else:
                 self.error = 'Error in TPTparseConfig'
             print(self.error + ' ', e)
-    
+            
     def loadItemData(self):
         try:
-            def load(itemReq):
-                url = 'https://api.guildwars2.com/v2/items?ids='
-                nameId = {'id': [], 'name': []}
-                for index, item in enumerate(itemReq):
-                    if index % 100 != 0:
-                        url += str(item) + ','
-                    else:
-                        url += str(item)
-                        req = requests.get(url).json()
-                        if "text" not in req:
-                            for fullitem in req:
-                                nameId['id'].append(fullitem['id'])
-                                nameId["name"].append(fullitem['name'])
-                            df = pd.DataFrame.from_dict(nameId)
-                            df.to_sql('Items', self.engine, if_exists='append', index=False)
-                            url = 'https://api.guildwars2.com/v2/items?ids='
-                            nameId = {'id': [], 'name': []}
-                req = requests.get(url).json()
-                if "text" not in req:
-                    for fullitem in req:
-                        nameId['id'].append(fullitem['id'])
-                        nameId["name"].append(fullitem['name'])
-                    url = 'https://api.guildwars2.com/v2/items?ids='        
-                    df = pd.DataFrame.from_dict(nameId)
-                    df.to_sql('Items', self.engine, if_exists='append', index=False)
-            connection = self.engine.connect()
-            metadata = sqlalchemy.MetaData()
-            tab = sqlalchemy.Table('Items', metadata, autoload=True, autoload_with=self.engine)
-            query = sqlalchemy.select([tab])
-            result = connection.execute(query)
-            result = result.fetchall()
-            for i in result:
-                self.itemData[i[0]] = i[1]
-            itemReq = requests.get('https://api.guildwars2.com/v2/commerce/prices').json()
-            notAdded = []
-            for i in itemReq:
-                try:
-                    self.itemData[i]
-                except:
-                    notAdded.append(i)
-            load(notAdded)
+            url = 'https://api.datawars2.ie/gw2/v1/items/json?filter=$fields=id,name'
+            req = requests.get(url).json()
+            for fullitem in req:
+                if 'id' in fullitem and 'name' in fullitem:
+                    self.itemData[fullitem['id']] = fullitem['name']
         except Exception as e:
-            if str(e) == 'Items':
-                itemReq = requests.get('https://api.guildwars2.com/v2/commerce/prices').json()
-                load(itemReq)
-                connection = self.engine.connect()
-                metadata = sqlalchemy.MetaData()
-                tab = sqlalchemy.Table('Items', metadata, autoload=True, autoload_with=self.engine)
-                query = sqlalchemy.select([tab])
-                result = connection.execute(query)
-                result = result.fetchall()
-                for i in result:
-                    self.itemData[i[0]] = i[1]
-            else:
-                self.error = 'Error in TPTloadItemData'
-                print(self.error + ' ', e)
-                print(traceback.format_exc())
-        
+            self.error = 'Error in TPTloadItemData'
+            print(self.error + ' ', e)
+            print(traceback.format_exc())
+
     def sendEmail(self, item):
         try:
             self.speaker[item[0]].set(u"\U0001F515")
@@ -234,7 +186,7 @@ class TradePostTracker:
                         targetPrice =  int(i[2])
                         if self.speaker[str(itemId)].get() != u"\U0001F515" and targetPrice != 0:
                             try:
-                                table_df = pd.read_sql_table(str(itemId), self.engine)
+                                table_df = pd.read_sql_table(str(itemId), self.priceEngine)
                                 if i[1] == 'buy':
                                     currentPrice = int(df['BuyPrice'][0])
                                     if currentPrice <= targetPrice:
@@ -249,7 +201,8 @@ class TradePostTracker:
                                 pass
                         break            
                 
-                df.to_sql(str(itemId), self.engine, if_exists='append', index=False)
+                df.to_sql(str(itemId), self.priceEngine, if_exists='append', index=False)
                 self.getCurrentPrice(itemId, df)
         except Exception as e:
+            print('error: ', e)
             pass
