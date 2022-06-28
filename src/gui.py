@@ -25,13 +25,13 @@ class Gui(customtkinter.CTk):
         self.itemFrames = []
         self.updatePrices = []
         self.count = 0
-        self.goldImage = ImageTk.PhotoImage(Image.open("Images\Gold.png").resize((15,15)))
-        self.silverImage = ImageTk.PhotoImage(Image.open("Images\Silver.png").resize((15,15)))
-        self.copperImage = ImageTk.PhotoImage(Image.open("Images\Bronze.png").resize((15,15)))
+        self.goldImage = ImageTk.PhotoImage(Image.open("images\Gold.png").resize((15,15)))
+        self.silverImage = ImageTk.PhotoImage(Image.open("images\Silver.png").resize((15,15)))
+        self.copperImage = ImageTk.PhotoImage(Image.open("images\Bronze.png").resize((15,15)))
         self.notiTrue = u"\U0001F514"
         self.notiFalse = u"\U0001F515"        
-        #self.grid_columnconfigure(1, weight=1)
-        #self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.frameLeft = customtkinter.CTkFrame(master=self)
         self.frameLeft.grid(row=0, column=0, columnspan=7, sticky="nswe")
         self.frameRight = customtkinter.CTkFrame(master=self)
@@ -374,7 +374,6 @@ class Gui(customtkinter.CTk):
         deleteItemButton.grid(row=0, column=7, sticky='s', pady=10, padx=(10, 10))
         
         def checkbox_event(index, item, setting):          
-            print(self.trader.currentPrices[item[0]][1][0].get())
             self.trader.itemIds[index][1] = setting
             self.trader.addToConfig()
             currentPriceFrame = customtkinter.CTkFrame(master=self.itemFrames[index])

@@ -25,7 +25,7 @@ class TradePostTracker:
         self.sender = ''
         self.password = ''
         self.receiver = ''
-        self.engine = sqlalchemy.create_engine('sqlite:///itemData.db')
+        self.engine = sqlalchemy.create_engine('sqlite:///../itemData.db')
         self.currentPrices = {}
         self.speaker = {}
         self.alertButtons = {}
@@ -33,7 +33,7 @@ class TradePostTracker:
     def addToConfig(self):
         try:
             config = configparser.ConfigParser()
-            config.read('config.ini')
+            config.read('../config.ini')
             strToAdd = ''
             for item in self.itemIds:
                 if item != None:
@@ -44,7 +44,7 @@ class TradePostTracker:
             config.set('Email','sender', self.sender)
             config.set('Email','password', self.password)
             config.set('Email','receiver', self.receiver)
-            with open('config.ini', 'w') as newini:
+            with open('../config.ini', 'w') as newini:
                 config.write(newini)
         except Exception as e:
             self.error = 'Error in TPTaddToConfig'
@@ -53,11 +53,11 @@ class TradePostTracker:
     def parseConfig(self):
         try:
             config = configparser.ConfigParser()
-            config.read('config.ini')
+            config.read('../config.ini')
             if config.sections() == []:
                 config['Configuration'] = {'TIMER': '10', 'ITEMS': '9482|buy|100|f, 24|sell|10|t'}
                 config['Email'] = {'server': 'smtp.office365.com', 'port': 587, 'sender': 'examplesender@hotmail.com', 'password': 'examplepassword', 'receiver': 'examplereceiver@emaildomain.com'}
-                with open('config.ini', 'w') as configfile: config.write(configfile)
+                with open('../config.ini', 'w') as configfile: config.write(configfile)
             self.timer = int(config['Configuration']['TIMER'])
             confItems = config['Configuration']['ITEMS'].replace(' ', '').split(',')
             self.server = config['Email']['server']
@@ -232,8 +232,6 @@ class TradePostTracker:
                 for i in self.itemIds:
                     if i != None and i[0] == str(itemId):
                         targetPrice =  int(i[2])
-                        print('targetPrice: ', targetPrice)
-                        print(self.speaker[str(itemId)].get())
                         if self.speaker[str(itemId)].get() != u"\U0001F515" and targetPrice != 0:
                             try:
                                 table_df = pd.read_sql_table(str(itemId), self.engine)
