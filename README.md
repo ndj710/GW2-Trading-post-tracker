@@ -1,9 +1,9 @@
 # Download link for v1.00 (latest)
 If updating from v0.85 or lower, delete all previous files apart from your config. Run the EXE in the same folder as your config.
 The directoy should look as follows:
-*GW2TT.exe
-*exampleConfig.ini
-*config.ini
+* GW2TT.exe
+* exampleConfig.ini
+* config.ini
 
 If you do not have a config.ini, just run the application once to generate it.
 https://drive.google.com/file/d/1tsNEmidkAIEMceHrbjXUtZgZUb6DJcAP/view?usp=sharing
