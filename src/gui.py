@@ -5,6 +5,9 @@ from PIL import Image, ImageTk
 from loadingSplash import LoadingSplash
 import os
 import sys
+import webbrowser
+
+
 
 __DIR__ = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 
@@ -14,7 +17,7 @@ customtkinter.set_default_color_theme("blue")
 class Gui(customtkinter.CTk):
     def __init__(self, trader):
         super().__init__()
-        self.width = 1285
+        self.width = 1293
         self.height = 720        
         self.withdraw()
         self.title("GW2 trading tracker")
@@ -36,10 +39,29 @@ class Gui(customtkinter.CTk):
         self.notiFalse = u"\U0001F515"        
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        self.frameLeft = customtkinter.CTkFrame(master=self)
+        self.frameLeft = customtkinter.CTkFrame(master=self, fg_color='gray20')
         self.frameLeft.grid(row=0, column=0, columnspan=7, sticky="nswe")
         self.frameRight = customtkinter.CTkFrame(master=self)
-        self.frameRight.grid(row=0, column=8, sticky="nswe", padx=0, pady=0)    
+        self.frameRight.grid(row=0, column=8, sticky="nswe", padx=0, pady=0)
+        
+        
+        #Scrollable stuff
+        canvas = customtkinter.CTkCanvas(self.frameLeft, bg='gray20')
+        scrollbar = customtkinter.CTkScrollbar(self.frameLeft, command=canvas.yview)
+        self.scrollable_frame = customtkinter.CTkFrame(canvas, fg_color='gray20')        
+        
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set, width=1060, height=720, highlightthickness=0, bg='gray20')
+        canvas.grid(row=0, column=0)
+        scrollbar.grid(row=0, column=1, sticky='ns')
+        
         # Right info/add/settings panel
         self.addFrame = customtkinter.CTkFrame(master=self.frameRight)
         self.addFrame.grid(row=1, column=0, sticky='nswe', pady=5, padx=5)
@@ -173,8 +195,8 @@ class Gui(customtkinter.CTk):
         self.watchNumber.set('Items being tracked: {}'.format(str(len(self.trader.itemIds))))           
         for index, item in enumerate(self.trader.itemIds):
             self.listSingleItem(item)
-            self.count += 1          
-
+            self.count += 1 
+            
     def updatePrice(self, index, item, price, priceGold, priceSilver, priceCopper):
         priceGold.configure(fg_color='gray22')
         priceSilver.configure(fg_color='gray22')
@@ -198,13 +220,16 @@ class Gui(customtkinter.CTk):
 
     def addItem(self):
         try:
+            
             try:
                 itemId = int(self.entry.get())
             except:
                 self.entry.configure(fg_color=('red'))
+                return
             if itemId not in self.trader.itemData:
                 self.entry.configure(fg_color=('red'))
                 print('Item not found')
+                return
             else:
                 already_in = False
                 for i in self.trader.itemIds:
@@ -212,7 +237,7 @@ class Gui(customtkinter.CTk):
                         already_in = True
                         self.entry.configure(fg_color=('red'))
                         print('already in')
-                        break
+                        return
                 if already_in == False:
                     item = [str(itemId), 'buy', '0', 'f']
                     try:
@@ -230,11 +255,10 @@ class Gui(customtkinter.CTk):
         self.trader.itemIds[index] = None
         self.trader.addToConfig()
         frame = self.itemFrames[index]
-        if frame != None:
-            frame.destroy()
-            self.itemFrames[index] = None
+        frame.destroy()
+        self.itemFrames[index] = None
         self.setWatchNumber()
-        self.count -= 1
+       
 
 
     def on_closing(self):
@@ -247,12 +271,6 @@ class Gui(customtkinter.CTk):
             if i != None:
                 n += 1
         self.watchNumber.set('Items being tracked: {}'.format(str(n)))    
-
-
-
-
-
-
 
 
 
@@ -273,10 +291,9 @@ class Gui(customtkinter.CTk):
         copper_var.set(str(price[2]))
 
         try:
-            self.itemFrames[self.count] = customtkinter.CTkFrame(master=self.frameLeft, corner_radius=0, fg_color='gray20')
+            self.itemFrames[self.count] = customtkinter.CTkFrame(master=self.scrollable_frame, corner_radius=0, bg_color='gray20', fg_color='gray20')
         except:
-            self.itemFrames.append(customtkinter.CTkFrame(master=self.frameLeft, corner_radius=0, fg_color='gray20'))
-
+            self.itemFrames.append(customtkinter.CTkFrame(master=self.scrollable_frame, corner_radius=0, bg_color='gray20', fg_color='gray20'))
         self.itemFrames[self.count].grid(row=self.count, column=0, sticky="nswe")
         
         self.itemFrames[self.count].columnconfigure(0, minsize=40) # id
@@ -289,9 +306,12 @@ class Gui(customtkinter.CTk):
         self.itemFrames[self.count].columnconfigure(7, minsize=40) # delete                   
         
         # ITEM ID AND NAME
-        itemIdLabel = customtkinter.CTkLabel(master=self.itemFrames[self.count],
-                                              text=item[0])
-        itemIdLabel.grid(row=0, column=0, pady=2, padx=2, sticky='w')        
+        itemIdLabel = customtkinter.CTkButton(master=self.itemFrames[self.count],
+                                              text=item[0],
+                                              command=lambda i=item[0]: webbrowser.open("https://www.gw2bltc.com/en/item/" + i, new=0, autoraise=True))
+        itemIdLabel.configure(fg_color='gray20')
+        itemIdLabel.grid(row=0, column=0, pady=2, padx=2, sticky='w')
+        
         
         itemLabel = customtkinter.CTkLabel(master=self.itemFrames[self.count],
                                               text=self.trader.itemData[int(item[0])])
@@ -319,6 +339,7 @@ class Gui(customtkinter.CTk):
         priceFrame.grid(row=0, column=3)
         
         priceGold = customtkinter.CTkEntry(master=priceFrame,
+                                           placeholder_text='Gld',
                                            text_color='#e0b930',
                                            validate='all', validatecommand=(pricevcmd, '%P'),
                                            textvariable=gold_var,
@@ -434,7 +455,7 @@ class Gui(customtkinter.CTk):
                                  fg_color=("gray75", "gray30"))   
                 buyButton.configure(state=tkinter.DISABLED,
                                                  fg_color="#315399")
-        checkbox_event(self.count, item, item[1])        
+        checkbox_event(self.count, item, item[1])
         
 if __name__ == "__main__":
     tradeObject = TradePostTracker()

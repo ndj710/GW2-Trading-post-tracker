@@ -1,6 +1,12 @@
-# Download link for v0.85 (latest)
-If updating from v0.82 or lower, delete all previous files apart from your config. Run the EXE in dist folder.
-https://drive.google.com/file/d/1ixzPoZK1Cpb9q8R96uAKHyl6g-weab0Z/view?usp=sharing
+# Download link for v1.00 (latest)
+If updating from v0.85 or lower, delete all previous files apart from your config. Run the EXE in the same folder as your config.
+The directoy should look as follows:
+*GW2TT.exe
+*exampleConfig.ini
+*config.ini
+
+If you do not have a config.ini, just run the application once to generate it.
+https://drive.google.com/file/d/1tsNEmidkAIEMceHrbjXUtZgZUb6DJcAP/view?usp=sharing
 
 # Note:
 This is an ongoing project, I am making an application for windows on behalf of a friend. I am experimenting with tkinter and other libraries.
@@ -17,11 +23,16 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 
 ### Changes made:
 
-#### Version 0.86 Changelog
+#### Version 1.00 Changelog
+Finished all the basic functionality, application is ready for use.
 Changes:
+*	Added scrollbar (have to use mouse and drag, scrollwheel not currently working)
+*	Added link to item data on https://www.gw2bltc.com/ by clicking itemID
+*	Removed priceData base, price will just be checked after each API call. No need for hisotoric data
 
 Bug fixes:
 *	Removed items that are not listed in the tradepost from being loaded into memory
+* 	Issue where deleting one item and adding another would sometimes overlap current items in the watchlist
 
 
 #### Version 0.85 Changelog

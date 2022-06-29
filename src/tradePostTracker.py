@@ -1,9 +1,5 @@
 import requests
-import sqlalchemy
 import time
-import pandas as pd
-pd.options.mode.chained_assignment = None
-from datetime import datetime
 import threading
 import configparser
 import traceback
@@ -25,7 +21,6 @@ class TradePostTracker:
         self.sender = ''
         self.password = ''
         self.receiver = ''
-        self.priceEngine = sqlalchemy.create_engine('sqlite:///../priceData.db')
         self.currentPrices = {}
         self.speaker = {}
         self.alertButtons = {}
@@ -33,7 +28,7 @@ class TradePostTracker:
     def addToConfig(self):
         try:
             config = configparser.ConfigParser()
-            config.read('../config.ini')
+            config.read('config.ini')
             strToAdd = ''
             for item in self.itemIds:
                 if item != None:
@@ -44,7 +39,7 @@ class TradePostTracker:
             config.set('Email','sender', self.sender)
             config.set('Email','password', self.password)
             config.set('Email','receiver', self.receiver)
-            with open('../config.ini', 'w') as newini:
+            with open('config.ini', 'w') as newini:
                 config.write(newini)
         except Exception as e:
             self.error = 'Error in TPTaddToConfig'
@@ -53,11 +48,11 @@ class TradePostTracker:
     def parseConfig(self):
         try:
             config = configparser.ConfigParser()
-            config.read('../config.ini')
+            config.read('config.ini')
             if config.sections() == []:
                 config['Configuration'] = {'TIMER': '10', 'ITEMS': '9482|buy|100|f, 24|sell|10|t'}
                 config['Email'] = {'server': 'smtp.office365.com', 'port': 587, 'sender': 'examplesender@hotmail.com', 'password': 'examplepassword', 'receiver': 'examplereceiver@emaildomain.com'}
-                with open('../config.ini', 'w') as configfile: config.write(configfile)
+                with open('config.ini', 'w') as configfile: config.write(configfile)
             self.timer = int(config['Configuration']['TIMER'])
             confItems = config['Configuration']['ITEMS'].replace(' ', '').split(',')
             self.server = config['Email']['server']
@@ -127,10 +122,10 @@ class TradePostTracker:
         
         return ('{}g {}s {}c'.format(gold, silver, copper), (gold, silver, copper))  
     
-    def getCurrentPrice(self, itemId, table_df):
+    def getCurrentPrice(self, itemId, df):
         try:
-            buy = str(table_df['BuyPrice'][len(table_df)-1])
-            sell = str(table_df['SellPrice'][len(table_df)-1])
+            buy = str(df['BuyPrice'])
+            sell = str(df['SellPrice'])
             buyPrice = self.convertPrice(buy)
             sellPrice = self.convertPrice(sell)
             self.currentPrices[str(itemId)][0][0].set(buyPrice[1][0])
@@ -148,13 +143,16 @@ class TradePostTracker:
         self.threads[0].start()
     
     def getItemPrices(self):
-        while True:
-            if self.threads[0].stopped() == True:
-                print('Thread closed')
-                break        
+        while True:    
             try:
                 print('running')
-                time.sleep(self.timer)
+                count = 0
+                while count < self.timer:
+                    if self.threads[0].stopped() == True:
+                        print('Thread closed')
+                        return                    
+                    time.sleep(1)
+                    count += 1
                 if self.loading == False:
                     url = 'https://api.guildwars2.com/v2/commerce/prices?ids='
                     for item in self.itemIds:
@@ -171,28 +169,20 @@ class TradePostTracker:
                 if item == 'text':
                     print('passing')
                     continue
-                df = pd.DataFrame([item])
-                date = datetime.now()
-                df['Time'] = date.strftime("%d-%m-%Y, %H:%M:%S")
-                df['BuyPrice'] = df['buys'][0]['unit_price']
-                df['BuyAmount'] = df['buys'][0]['quantity']
-                df['SellPrice'] = df['sells'][0]['unit_price']
-                df['SellAmount'] = df['sells'][0]['quantity']
-                df = df.loc[:, ['id', 'whitelisted', 'BuyPrice', 'BuyAmount', 'SellPrice', 'SellAmount', 'Time']]
-                itemId = df['id'][0]
+                df = {'id': item['id'], 'BuyPrice': item['buys']['unit_price'], 'SellPrice': item['sells']['unit_price']}
+                itemId = df['id']
                 
                 for i in self.itemIds:
                     if i != None and i[0] == str(itemId):
                         targetPrice =  int(i[2])
                         if self.speaker[str(itemId)].get() != u"\U0001F515" and targetPrice != 0:
                             try:
-                                table_df = pd.read_sql_table(str(itemId), self.priceEngine)
                                 if i[1] == 'buy':
-                                    currentPrice = int(df['BuyPrice'][0])
+                                    currentPrice = int(df['BuyPrice'])
                                     if currentPrice <= targetPrice:
                                         self.sendEmail(i)
                                 elif i[1] == 'sell':
-                                    currentPrice = int(df['SellPrice'][0])
+                                    currentPrice = int(df['SellPrice'])
                                     if currentPrice >= targetPrice:
                                         self.sendEmail(i)
                             except Exception as e:
@@ -200,8 +190,6 @@ class TradePostTracker:
                                 print(self.error + ' ', e)
                                 pass
                         break            
-                
-                df.to_sql(str(itemId), self.priceEngine, if_exists='append', index=False)
                 self.getCurrentPrice(itemId, df)
         except Exception as e:
             print('error: ', e)
