@@ -17,13 +17,18 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 
 ### Changes made:
 
+#### Version 0.86 Changelog
+Changes:
+
+Bug fixes:
+*	Removed items that are not listed in the tradepost from being loaded into memory
+
+
 #### Version 0.85 Changelog
 
 Changes:
 *	Changed item data population method, Item Data no longer needs to be saved in database. Only price data is saved to database
 
-Bug fixes:
-*	
 
 #### Version 0.84 Changelog
 

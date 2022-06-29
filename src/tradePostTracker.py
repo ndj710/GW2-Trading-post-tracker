@@ -80,10 +80,10 @@ class TradePostTracker:
             
     def loadItemData(self):
         try:
-            url = 'https://api.datawars2.ie/gw2/v1/items/json?filter=$fields=id,name'
+            url = 'https://api.datawars2.ie/gw2/v1/items/json?filter=$fields=id,name,buy_price,sell_price'
             req = requests.get(url).json()
             for fullitem in req:
-                if 'id' in fullitem and 'name' in fullitem:
+                if 'id' in fullitem and 'name' in fullitem and 'buy_price' in fullitem and 'sell_price' in fullitem:
                     self.itemData[fullitem['id']] = fullitem['name']
         except Exception as e:
             self.error = 'Error in TPTloadItemData'
