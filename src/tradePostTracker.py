@@ -6,7 +6,7 @@ import traceback
 import email
 import smtplib
 from stoppableThread import StoppableThread
-
+import logging
 
 class TradePostTracker:
     def __init__(self):
@@ -22,8 +22,8 @@ class TradePostTracker:
         self.password = ''
         self.receiver = ''
         self.currentPrices = {}
-        self.speaker = {}
-        self.alertButtons = {}
+        self.speaker = []
+        self.alertButtons = []
     
     def addToConfig(self):
         try:
@@ -42,8 +42,7 @@ class TradePostTracker:
             with open('config.ini', 'w') as newini:
                 config.write(newini)
         except Exception as e:
-            self.error = 'Error in TPTaddToConfig'
-            print(self.error + ' ', e)
+            self.error = traceback.format_exc()
     
     def parseConfig(self):
         try:
@@ -63,6 +62,14 @@ class TradePostTracker:
             for i in confItems:
                 i = i.split('|')
                 if i != ['']:
+                    errorFlag = False
+                    for x in self.itemIds:
+                        if x[0] == i[0] and x[1] == i[1]:
+                            errorFlag = True
+                    if errorFlag == True:
+                        self.error = 'Too many duplicates in config file, see default for examples'     
+                        print(self.error)
+                        return
                     self.itemIds.append(i)
         except Exception as e:
             if e == 'Configuration':
@@ -70,8 +77,7 @@ class TradePostTracker:
             elif e == 'Email':
                 self.error = 'Error in config file, see default for examples'
             else:
-                self.error = 'Error in TPTparseConfig'
-            print(self.error + ' ', e)
+                self.error = traceback.format_exc()
             
     def loadItemData(self):
         try:
@@ -81,14 +87,12 @@ class TradePostTracker:
                 if 'id' in fullitem and 'name' in fullitem and 'buy_price' in fullitem and 'sell_price' in fullitem:
                     self.itemData[fullitem['id']] = fullitem['name']
         except Exception as e:
-            self.error = 'Error in TPTloadItemData'
-            print(self.error + ' ', e)
-            print(traceback.format_exc())
+            self.error = traceback.format_exc()
 
     def sendEmail(self, item):
         try:
-            self.speaker[item[0]].set(u"\U0001F515")
-            self.alertButtons[item[0]].configure(fg_color=("#A7171A"))               
+            self.speaker[item[4]].set(u"\U0001F515")
+            self.alertButtons[item[4]].configure(fg_color=("#A7171A"))               
             msg = email.message_from_string('Item {} ({}) has hit the alert threshold'.format(self.itemData[int(item[0])], str(item[0])))
             msg['From'] = self.sender
             msg['To'] = self.receiver
@@ -101,26 +105,27 @@ class TradePostTracker:
             s.sendmail(self.sender, self.receiver, msg.as_string())
             s.quit()         
         except Exception as e:
-            self.error = 'Error in TPTsendEmail'
-            print(self.error + ' ', e)
+            self.error = traceback.format_exc()
     
     
     def convertPrice(self, price):
-        gold = '0'
-        silver = '0'
-        copper = '0'
-        if len(price) >= 5:
-            gold = price[:-4]
-        if len(price) >= 3:
-            silver = price[-4:-2]
-            if silver[0] == '0':
-                silver = silver[1]
-        if len(price) >= 2:
-            copper = price[-2:]
-            if copper[0] == '0':
-                copper = copper[1]
-        
-        return ('{}g {}s {}c'.format(gold, silver, copper), (gold, silver, copper))  
+        try:
+            gold = '0'
+            silver = '0'
+            copper = '0'
+            if len(price) >= 5:
+                gold = price[:-4]
+            if len(price) >= 3:
+                silver = price[-4:-2]
+                if silver[0] == '0':
+                    silver = silver[1]
+            if len(price) >= 2:
+                copper = price[-2:]
+                if copper[0] == '0':
+                    copper = copper[1]
+            return ('{}g {}s {}c'.format(gold, silver, copper), (gold, silver, copper))
+        except Exception as e:
+            self.error = traceback.format_exc()
     
     def getCurrentPrice(self, itemId, df):
         try:
@@ -135,8 +140,7 @@ class TradePostTracker:
             self.currentPrices[str(itemId)][1][1].set(sellPrice[1][1])
             self.currentPrices[str(itemId)][1][2].set(sellPrice[1][2])
         except Exception as e:
-            self.error = 'Error in TPTgetCurrentPrice'
-            print(self.error + ' ', e)
+            self.error = traceback.format_exc()
             
     def startUpdate(self):
         self.threads.append(StoppableThread(target=self.getItemPrices))
@@ -146,6 +150,9 @@ class TradePostTracker:
         while True:    
             try:
                 print('running')
+                if self.error != '':
+                    logging.basicConfig(filename='./logs/updateThreadCrash.log', encoding='utf-8', level=logging.DEBUG)
+                    logging.error(self.error)                   
                 count = 0
                 while count < self.timer:
                     if self.threads[0].stopped() == True:
@@ -160,8 +167,7 @@ class TradePostTracker:
                             url += str(item[0]) + ','
                     self.create_frame(requests.get(url).json())
             except Exception as e:
-                self.error = 'Error in TPTgetItemPrice'
-                print(self.error + ' ', e)
+                self.error = traceback.format_exc()
 
     def create_frame(self, data):
         try:
@@ -171,26 +177,18 @@ class TradePostTracker:
                     continue
                 df = {'id': item['id'], 'BuyPrice': item['buys']['unit_price'], 'SellPrice': item['sells']['unit_price']}
                 itemId = df['id']
-                
                 for i in self.itemIds:
                     if i != None and i[0] == str(itemId):
                         targetPrice =  int(i[2])
-                        if self.speaker[str(itemId)].get() != u"\U0001F515" and targetPrice != 0:
-                            try:
-                                if i[1] == 'buy':
-                                    currentPrice = int(df['BuyPrice'])
-                                    if currentPrice <= targetPrice:
-                                        self.sendEmail(i)
-                                elif i[1] == 'sell':
-                                    currentPrice = int(df['SellPrice'])
-                                    if currentPrice >= targetPrice:
-                                        self.sendEmail(i)
-                            except Exception as e:
-                                self.error = 'Error in TPTcreateframe inner loop'
-                                print(self.error + ' ', e)
-                                pass
-                        break            
+                        if self.speaker[i[4]].get() != u"\U0001F515" and targetPrice != 0:
+                            if i[1] == 'buy':
+                                currentPrice = int(df['BuyPrice'])
+                                if currentPrice <= targetPrice:
+                                    self.sendEmail(i)
+                            elif i[1] == 'sell':
+                                currentPrice = int(df['SellPrice'])
+                                if currentPrice >= targetPrice:
+                                    self.sendEmail(i)    
                 self.getCurrentPrice(itemId, df)
         except Exception as e:
-            print('error: ', e)
-            pass
+            self.error = traceback.format_exc()

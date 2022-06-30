@@ -23,6 +23,17 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 
 ### Changes made:
 
+#### Version 1.01 Changelog
+
+Changes:
+*	Changed size of setting input fields to match rest of UI
+*	Can now list an item twice (one for selling and one for buying)
+*	Title now has capital T's
+
+Bug fixes:
+*	Removed leading whitespace from item names
+
+
 #### Version 1.00 Changelog
 Finished all the basic functionality, application is ready for use.
 Changes:

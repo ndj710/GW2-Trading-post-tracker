@@ -3,11 +3,15 @@ import customtkinter
 from tradePostTracker import TradePostTracker
 from PIL import Image, ImageTk
 from loadingSplash import LoadingSplash
+from findItems import FindItems
+import traceback
 import os
 import sys
 import webbrowser
+import logging
 
 
+os.makedirs(os.path.dirname('./logs/'), exist_ok=True)
 
 __DIR__ = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 
@@ -20,7 +24,7 @@ class Gui(customtkinter.CTk):
         self.width = 1293
         self.height = 720        
         self.withdraw()
-        self.title("GW2 trading tracker")
+        self.title("GW2 Trading Tracker")
         self.geometry(f"{self.width}x{self.height}")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)        
         splash = LoadingSplash(self)
@@ -28,6 +32,12 @@ class Gui(customtkinter.CTk):
         self.watchNumber = tkinter.StringVar()
         self.trader.parseConfig()
         self.trader.loadItemData()
+        if self.trader.error != '':
+            logging.basicConfig(filename='./logs/guiCrash.log', encoding='utf-8', level=logging.DEBUG)
+            logging.error(self.trader.error)             
+            self.destroy()
+            sys.exit()
+        self.trader.startUpdate()
         self.settingsOpen = False
         self.itemFrames = []
         self.updatePrices = []
@@ -77,25 +87,33 @@ class Gui(customtkinter.CTk):
                                                 text="+",
                                                 fg_color=("gray75", "gray30"),
                                                 command=self.addItem)
-        self.add.grid(row=0, column=1, sticky='nswe', pady=0, padx=0)                 
+        self.add.grid(row=0, column=1, sticky='nswe', pady=0, padx=0) 
+        
+        #self.findItemsButton = customtkinter.CTkButton(master=self.frameRight,
+                                                      #width=200,
+                                                      #command=self.find,
+                                                      #fg_color=("gray75", "gray30"),
+                                                      #text='Item Lookup')
+        #self.findItemsButton.grid(row=2, column=0, sticky='nswe', pady=5)
+        
         self.itemsInDb = customtkinter.CTkLabel(master=self.frameRight,
-                                                   text='Items in database: ' + str(len(self.trader.itemData)),
+                                                   text='Available items: ' + str(len(self.trader.itemData)),
                                                    fg_color=("white", "gray38"),
                                                    width=200,
                                                    justify=tkinter.CENTER)
-        self.itemsInDb.grid(row=2, column=0, sticky="nswe", pady=5, padx=0)
+        self.itemsInDb.grid(row=3, column=0, sticky="nswe", pady=5, padx=0)
         self.itemsWatched = customtkinter.CTkLabel(master=self.frameRight, 
                                                 textvariable=self.watchNumber, 
                                                 fg_color=("white", "gray38"), 
                                                 width=200,
                                                 justify=tkinter.CENTER)
-        self.itemsWatched.grid(row=3, column=0, sticky="nswe", pady=5, padx=0)          
+        self.itemsWatched.grid(row=4, column=0, sticky="nswe", pady=5, padx=0)          
         self.settings = customtkinter.CTkButton(master=self.frameRight,
                                                 fg_color=("gray75", "gray30"),
                                                 text='Settings',
                                                 width=200,
                                                 command=lambda: self.showSettings())
-        self.settings.grid(row=4, sticky='nswe', pady=5)  
+        self.settings.grid(row=5, sticky='nswe', pady=5)  
         self.settingsFrame = customtkinter.CTkFrame(master=self.frameRight)
         self.serverVar = tkinter.StringVar(self.settingsFrame, self.trader.server)
         self.portVar = tkinter.StringVar(self.settingsFrame, self.trader.port)
@@ -105,6 +123,9 @@ class Gui(customtkinter.CTk):
         self.listSavedItems()
         splash.destroy()
         self.trader.loading = False
+    
+    def find(self):
+        findWindow = FindItems(self, self.trader.itemData)
         
     def showSettings(self):
         if self.settingsOpen == True:
@@ -115,32 +136,38 @@ class Gui(customtkinter.CTk):
         else:
             self.settingsOpen = True
             self.settings.configure(fg_color=("#315399"))
-        self.settingsFrame.grid(row=5)
+        self.settingsFrame.grid(row=6)
         self.server = customtkinter.CTkEntry(master=self.settingsFrame,
+                                             width=200,
                                              placeholder_text='SMTP Server',
                                              textvariable=self.serverVar)
         self.server.grid(row=5, pady=5, padx=5)
         self.port = customtkinter.CTkEntry(master=self.settingsFrame,
                                              placeholder_text='Port',
+                                             width=200,
                                              validate='all', validatecommand=(self.vcmd, '%P'),
                                              textvariable=self.portVar)
         self.port.grid(row=6, pady=5, padx=5)
         self.fromEmail = customtkinter.CTkEntry(master=self.settingsFrame,
                                              placeholder_text='Send from',
+                                             width=200,
                                              textvariable=self.fromEmailVar)
         self.fromEmail.grid(row=7, pady=5, padx=5)
         self.password = customtkinter.CTkEntry(master=self.settingsFrame,
                                              placeholder_text='Password',
+                                             width=200,
                                              show="*",
                                              textvariable=self.passwordVar)
         self.password.grid(row=8, pady=5, padx=5)
         self.toEmail = customtkinter.CTkEntry(master=self.settingsFrame,
                                              placeholder_text='Send to',
+                                             width=200,
                                              textvariable=self.toEmailVar)
         self.toEmail.grid(row=9, pady=5, padx=5)
         self.saveEmail = customtkinter.CTkButton(master=self.settingsFrame,
                                                  text='Save',
                                                  fg_color=("#315399"),
+                                                 width=200,
                                                  command=self.parseEmail)
         self.saveEmail.grid(row=10, pady=5, padx=5)             
         
@@ -181,15 +208,15 @@ class Gui(customtkinter.CTk):
             priceGold.configure(fg_color='red')
             priceSilver.configure(fg_color='red')
             priceCopper.configure(fg_color='red')  
-            self.trader.speaker[item[0]].set(self.notiFalse)
-            self.trader.alertButtons[item[0]].configure(fg_color=("#A7171A"))            
+            self.trader.speaker[item[4]].set(self.notiFalse)
+            self.trader.alertButtons[item[4]].configure(fg_color=("#A7171A"))            
             return
-        if self.trader.speaker[item[0]].get() == self.notiTrue:
-            self.trader.speaker[item[0]].set(self.notiFalse)
-            self.trader.alertButtons[item[0]].configure(fg_color=("#A7171A"))
+        if self.trader.speaker[item[4]].get() == self.notiTrue:
+            self.trader.speaker[item[4]].set(self.notiFalse)
+            self.trader.alertButtons[item[4]].configure(fg_color=("#A7171A"))
         else: 
-            self.trader.speaker[item[0]].set(self.notiTrue)
-            self.trader.alertButtons[item[0]].configure(fg_color=("#71C562"))    
+            self.trader.speaker[item[4]].set(self.notiTrue)
+            self.trader.alertButtons[item[4]].configure(fg_color=("#71C562"))    
         
     def listSavedItems(self):
         self.watchNumber.set('Items being tracked: {}'.format(str(len(self.trader.itemIds))))           
@@ -212,19 +239,20 @@ class Gui(customtkinter.CTk):
             copper = int(price[2].get())
         price = gold * 10000 + silver * 100 + copper
         if price == 0:
-            self.trader.speaker[item[0]].set(u"\U0001F515")
-            self.trader.alertButtons[item[0]].configure(fg_color=("#A7171A"))              
+            self.trader.speaker[item[4]].set(u"\U0001F515")
+            self.trader.alertButtons[item[4]].configure(fg_color=("#A7171A"))              
         self.trader.itemIds[index][2] = price
         self.trader.addToConfig()
         self.updatePrices[index].grid_remove()
 
     def addItem(self):
         try:
-            
             try:
                 itemId = int(self.entry.get())
             except:
                 self.entry.configure(fg_color=('red'))
+                logging.basicConfig(filename='./logs/guiCrash.log', encoding='utf-8', level=logging.DEBUG)
+                logging.error(traceback.format_exc())                 
                 return
             if itemId not in self.trader.itemData:
                 self.entry.configure(fg_color=('red'))
@@ -232,14 +260,22 @@ class Gui(customtkinter.CTk):
                 return
             else:
                 already_in = False
+                limitCount = 0
                 for i in self.trader.itemIds:
                     if i != None and int(i[0]) == itemId:
-                        already_in = True
-                        self.entry.configure(fg_color=('red'))
-                        print('already in')
-                        return
+                        limitCount += 1
+                if limitCount >= 2:
+                    already_in = True
+                    self.entry.configure(fg_color=('red'))
+                    print('already in')
+                    return                    
                 if already_in == False:
-                    item = [str(itemId), 'buy', '0', 'f']
+                    bs = 'buy'
+                    for x in self.trader.itemIds:
+                        if x != None and x[0] == str(itemId):
+                            if x[1] == 'buy':
+                                bs = 'sell'
+                    item = [str(itemId), bs, '0', 'f']
                     try:
                         self.trader.itemIds[self.count] = item
                     except:
@@ -249,7 +285,8 @@ class Gui(customtkinter.CTk):
                     self.setWatchNumber()  
                     self.count += 1
         except Exception as e:
-            print('error in adding item: ', e)
+            logging.basicConfig(filename='./logs/guiCrash.log', encoding='utf-8', level=logging.DEBUG)
+            logging.error(traceback.format_exc()) 
 
     def deleteItem(self, index, item): 
         self.trader.itemIds[index] = None
@@ -259,7 +296,6 @@ class Gui(customtkinter.CTk):
         self.itemFrames[index] = None
         self.setWatchNumber()
        
-
 
     def on_closing(self):
         self.trader.threads[0].stop()
@@ -275,11 +311,12 @@ class Gui(customtkinter.CTk):
 
 
     def listSingleItem(self, item):
-        self.trader.currentPrices[item[0]] = [[tkinter.StringVar(value='...'), tkinter.StringVar(value='...'), tkinter.StringVar(value='...')], 
-                                              [tkinter.StringVar(value='...'), tkinter.StringVar(value='...'), tkinter.StringVar(value='...')]]
+        if item[0] not in self.trader.currentPrices: 
+            self.trader.currentPrices[item[0]] = [[tkinter.StringVar(value='...'), tkinter.StringVar(value='...'), tkinter.StringVar(value='...')], 
+                                                  [tkinter.StringVar(value='...'), tkinter.StringVar(value='...'), tkinter.StringVar(value='...')]]
         #if item[3] == 't':
         #    self.trader.speaker[item[0]] = tkinter.StringVar(value=self.notiTrue)
-        self.trader.speaker[item[0]] = tkinter.StringVar(value=self.notiFalse)
+        
         price = self.trader.convertPrice(item[2])[1]
         gold_var = tkinter.StringVar()
         gold_var.set(str(price[0]))
@@ -290,10 +327,7 @@ class Gui(customtkinter.CTk):
         copper_var = tkinter.StringVar()
         copper_var.set(str(price[2]))
 
-        try:
-            self.itemFrames[self.count] = customtkinter.CTkFrame(master=self.scrollable_frame, corner_radius=0, bg_color='gray20', fg_color='gray20')
-        except:
-            self.itemFrames.append(customtkinter.CTkFrame(master=self.scrollable_frame, corner_radius=0, bg_color='gray20', fg_color='gray20'))
+        self.itemFrames.append(customtkinter.CTkFrame(master=self.scrollable_frame, corner_radius=0, bg_color='gray20', fg_color='gray20'))
         self.itemFrames[self.count].grid(row=self.count, column=0, sticky="nswe")
         
         self.itemFrames[self.count].columnconfigure(0, minsize=40) # id
@@ -312,9 +346,9 @@ class Gui(customtkinter.CTk):
         itemIdLabel.configure(fg_color='gray20')
         itemIdLabel.grid(row=0, column=0, pady=2, padx=2, sticky='w')
         
-        
         itemLabel = customtkinter.CTkLabel(master=self.itemFrames[self.count],
-                                              text=self.trader.itemData[int(item[0])])
+                                              text=self.trader.itemData[int(item[0])],
+                                              width=1)
         itemLabel.grid(row=0, column=1, pady=2, padx=2, sticky='w')
         
         # BUY SELL BUTTONS
@@ -381,13 +415,19 @@ class Gui(customtkinter.CTk):
         gold_var.trace_add('write', lambda *args, i=self.count, v=gold_var: callback(i, v, *args))    
         
         # Notifactions
-        self.trader.alertButtons[item[0]] = customtkinter.CTkButton(master=self.itemFrames[self.count],
-                                                textvariable=self.trader.speaker[item[0]],
+        for itemIdIndex in range(len(self.trader.itemIds)):
+            if self.trader.itemIds[itemIdIndex] == item:
+                item = item + [itemIdIndex]
+                self.trader.itemIds[itemIdIndex] = item
+                
+        self.trader.speaker.append(tkinter.StringVar(value=self.notiFalse))
+        self.trader.alertButtons.append(customtkinter.CTkButton(master=self.itemFrames[self.count],
+                                                textvariable=self.trader.speaker[item[4]],
                                                 text_font=('',-20),
                                                 width=5,
                                                 fg_color=("#A7171A"),
-                                                command=lambda i=item, pg=priceGold, ps=priceSilver, pc=priceCopper: self.changeMute(i, pg, ps, pc))
-        self.trader.alertButtons[item[0]].grid(row=0, column=6, pady=2, padx=2)             
+                                                command=lambda i=item, pg=priceGold, ps=priceSilver, pc=priceCopper: self.changeMute(i, pg, ps, pc)))
+        self.trader.alertButtons[self.count].grid(row=0, column=6, pady=2, padx=2)             
         
         # Delete item
         deleteItemButton = customtkinter.CTkButton(master=self.itemFrames[self.count],
@@ -398,11 +438,18 @@ class Gui(customtkinter.CTk):
                                             command=lambda i=self.count, it=item: self.deleteItem(i, it))
         deleteItemButton.grid(row=0, column=7, sticky='s', pady=10, padx=(10, 10))
         
-        def checkbox_event(index, item, setting):          
-            self.trader.itemIds[index][1] = setting
-            self.trader.addToConfig()
+        def checkbox_event(index, item, setting, initial=None):
+            limitCount = 0
+            for x in self.trader.itemIds:
+                if x != None and x[0] == item[0]:
+                    limitCount += 1
+            if limitCount <= 1:
+                self.trader.itemIds[index][1] = setting
+                self.trader.addToConfig()
+            elif limitCount >= 2 and initial == None:
+                return
             currentPriceFrame = customtkinter.CTkFrame(master=self.itemFrames[index])
-            currentPriceFrame.grid(row=0, column=5, pady=2, padx=2, sticky='w')           
+            currentPriceFrame.grid(row=0, column=5, pady=2, padx=2, sticky='w') 
             if setting == 'sell':
                 gold = customtkinter.CTkLabel(master=currentPriceFrame,
                                               width=1,
@@ -425,10 +472,16 @@ class Gui(customtkinter.CTk):
                 copper.grid(row=0, column=2, pady=0, padx=0, sticky='ew')
                 copper['compound'] = tkinter.RIGHT
                 copper['image'] = self.copperImage
-                sellButton.configure(state=tkinter.DISABLED,
-                                                  fg_color="#315399")
-                buyButton.configure(state=tkinter.NORMAL,
-                                 fg_color=("gray75", "gray30"))
+                if limitCount == 2 and initial == None:
+                    sellButton.configure(state=tkinter.NORMAL,
+                                     fg_color=("gray75", "gray30"))   
+                    buyButton.configure(state=tkinter.DISABLED,
+                                                     fg_color="#315399")
+                else:
+                    sellButton.configure(state=tkinter.DISABLED,
+                                                      fg_color="#315399")
+                    buyButton.configure(state=tkinter.NORMAL,
+                                     fg_color=("gray75", "gray30"))
             elif setting == 'buy':
                 gold = customtkinter.CTkLabel(master=currentPriceFrame,
                                               width=1,
@@ -451,14 +504,19 @@ class Gui(customtkinter.CTk):
                 copper.grid(row=0, column=2, pady=0, padx=0,  sticky='ew')
                 copper['compound'] = tkinter.RIGHT
                 copper['image'] = self.copperImage
-                sellButton.configure(state=tkinter.NORMAL,
-                                 fg_color=("gray75", "gray30"))   
-                buyButton.configure(state=tkinter.DISABLED,
-                                                 fg_color="#315399")
-        checkbox_event(self.count, item, item[1])
+                if limitCount == 2 and initial == None:
+                    sellButton.configure(state=tkinter.DISABLED,
+                                                      fg_color="#315399")
+                    buyButton.configure(state=tkinter.NORMAL,
+                                     fg_color=("gray75", "gray30"))                    
+                else:
+                    sellButton.configure(state=tkinter.NORMAL,
+                                     fg_color=("gray75", "gray30"))   
+                    buyButton.configure(state=tkinter.DISABLED,
+                                                     fg_color="#315399")
+        checkbox_event(self.count, item, item[1], True)
         
 if __name__ == "__main__":
     tradeObject = TradePostTracker()
-    tradeObject.startUpdate()
     app = Gui(tradeObject)
     app.mainloop()
