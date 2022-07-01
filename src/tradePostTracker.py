@@ -8,6 +8,8 @@ import smtplib
 from stoppableThread import StoppableThread
 import logging
 
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 class TradePostTracker:
     def __init__(self):
         self.loading = True
@@ -91,8 +93,8 @@ class TradePostTracker:
 
     def sendEmail(self, item):
         try:
-            self.speaker[item[4]].set(u"\U0001F515")
-            self.alertButtons[item[4]].configure(fg_color=("#A7171A"))               
+            self.speaker[item[4]].set(u"\U0001F4E9")
+            self.alertButtons[item[4]].configure(fg_color=("#F28C28"))
             msg = email.message_from_string('Item {} ({}) has hit the alert threshold'.format(self.itemData[int(item[0])], str(item[0])))
             msg['From'] = self.sender
             msg['To'] = self.receiver
@@ -152,7 +154,8 @@ class TradePostTracker:
                 print('running')
                 if self.error != '':
                     logging.basicConfig(filename='./logs/updateThreadCrash.log', encoding='utf-8', level=logging.DEBUG)
-                    logging.error(self.error)                   
+                    logging.error(self.error)   
+                    self.error = ''
                 count = 0
                 while count < self.timer:
                     if self.threads[0].stopped() == True:
@@ -180,7 +183,7 @@ class TradePostTracker:
                 for i in self.itemIds:
                     if i != None and i[0] == str(itemId):
                         targetPrice =  int(i[2])
-                        if self.speaker[i[4]].get() != u"\U0001F515" and targetPrice != 0:
+                        if self.speaker[i[4]].get() == u"\U0001F514" and targetPrice != 0:
                             if i[1] == 'buy':
                                 currentPrice = int(df['BuyPrice'])
                                 if currentPrice <= targetPrice:

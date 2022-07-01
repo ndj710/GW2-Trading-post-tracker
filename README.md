@@ -1,4 +1,4 @@
-# Download link for v1.01 (latest)
+# Download link for v1.02 (latest)
 If updating from v0.85 or lower, delete all previous files apart from your config. Run the EXE in the same folder as your config.
 The directoy should look as follows:
 * GW2TT.exe
@@ -21,9 +21,20 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 </div>
 
 
-### Changes made:
+### Changelog:
 
-#### Version 1.01 Changelog
+#### Version 1.02
+
+Changes:
+*	Adjusted the padding at bottom of notification button to center the textimage
+*	Added a state for notifcation button being triggered
+*	Adjusted delete button height to match notification button
+
+Bug fixes:
+*	Logs showing same error multiple times
+
+
+#### Version 1.01
 
 Changes:
 *	Changed size of setting input fields to match rest of UI
@@ -34,7 +45,7 @@ Bug fixes:
 *	Removed leading whitespace from item names
 
 
-#### Version 1.00 Changelog
+#### Version 1.00
 Finished all the basic functionality, application is ready for use.
 Changes:
 *	Added scrollbar (have to use mouse and drag, scrollwheel not currently working)
@@ -46,13 +57,13 @@ Bug fixes:
 * 	Issue where deleting one item and adding another would sometimes overlap current items in the watchlist
 
 
-#### Version 0.85 Changelog
+#### Version 0.85
 
 Changes:
 *	Changed item data population method, Item Data no longer needs to be saved in database. Only price data is saved to database
 
 
-#### Version 0.84 Changelog
+#### Version 0.84
 
 Changes:
 *	Cleaned up source code
@@ -62,7 +73,7 @@ Bug fixes:
 *	Issue with notification bell being red when should be green (sometimes)
 
 
-#### Version 0.83 Changelog
+#### Version 0.83
 
 Changes:
 * 	Changed format of current price
@@ -76,7 +87,7 @@ Bug fixes:
 * 	Fixed bug where 'Item ID' is not reporting incorrect ID
 * 	Fixed placeholder for target price entry boxes not showing correctly
 
-#### Version 0.82 Changelog
+#### Version 0.82
 
 Changes:
 * 	Price now in colours and displays images for gold, silver, copper

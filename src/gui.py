@@ -47,6 +47,7 @@ class Gui(customtkinter.CTk):
         self.copperImage = ImageTk.PhotoImage(Image.open(os.path.join(__DIR__, 'images', "Bronze.png")).resize((15,15)))
         self.notiTrue = u"\U0001F514"
         self.notiFalse = u"\U0001F515"        
+        self.notiTrigger = u"\U0001F4E7"        
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.frameLeft = customtkinter.CTkFrame(master=self, fg_color='gray20')
@@ -327,8 +328,27 @@ class Gui(customtkinter.CTk):
         copper_var = tkinter.StringVar()
         copper_var.set(str(price[2]))
 
-        self.itemFrames.append(customtkinter.CTkFrame(master=self.scrollable_frame, corner_radius=0, bg_color='gray20', fg_color='gray20'))
+        self.itemFrames.append(tkinter.Frame(master=self.scrollable_frame, bg='gray20'))
         self.itemFrames[self.count].grid(row=self.count, column=0, sticky="nswe")
+        
+        
+        #def on_drag_start(event):
+            #print('event', event)
+            #widget = event.widget
+            #print(widget)
+            #widget._drag_start_x = event.x
+            #widget._drag_start_y = event.y
+        
+        #def on_drag_motion(event):
+            #widget = event.widget
+            #x = widget.winfo_x() - widget._drag_start_x + event.x
+            #y = widget.winfo_y() - widget._drag_start_y + event.y
+            #widget.place(x=x, y=y)        
+        
+        #self.itemFrames[self.count].bind("<Button-1>", on_drag_start)
+        #self.itemFrames[self.count].bind("<B1-Motion>", on_drag_motion)
+
+        
         
         self.itemFrames[self.count].columnconfigure(0, minsize=40) # id
         self.itemFrames[self.count].columnconfigure(1, minsize=350) # name
@@ -349,7 +369,7 @@ class Gui(customtkinter.CTk):
         itemLabel = customtkinter.CTkLabel(master=self.itemFrames[self.count],
                                               text=self.trader.itemData[int(item[0])],
                                               width=1)
-        itemLabel.grid(row=0, column=1, pady=2, padx=2, sticky='w')
+        itemLabel.grid(row=0, column=1, pady=2, padx=2, sticky='w')  
         
         # BUY SELL BUTTONS
         buySellButtons = customtkinter.CTkFrame(master=self.itemFrames[self.count])
@@ -426,6 +446,7 @@ class Gui(customtkinter.CTk):
                                                 text_font=('',-20),
                                                 width=5,
                                                 fg_color=("#A7171A"),
+                                                notif=True,
                                                 command=lambda i=item, pg=priceGold, ps=priceSilver, pc=priceCopper: self.changeMute(i, pg, ps, pc)))
         self.trader.alertButtons[self.count].grid(row=0, column=6, pady=2, padx=2)             
         
@@ -434,6 +455,7 @@ class Gui(customtkinter.CTk):
                                             text=u"\u274C",
                                             text_color='red',
                                             width=5,
+                                            height=35,
                                             fg_color=("gray75", "gray30"),
                                             command=lambda i=self.count, it=item: self.deleteItem(i, it))
         deleteItemButton.grid(row=0, column=7, sticky='s', pady=10, padx=(10, 10))
