@@ -6,7 +6,7 @@ The directoy should look as follows:
 * config.ini
 
 If you do not have a config.ini, just run the application once to generate it.
-* https://github.com/ndj710/GW2-Trading-post-tracker/raw/main/downloads/GW2TT%20v1.02.zip
+* https://github.com/ndj710/GW2-Trading-post-tracker/raw/main/downloads/GW2TT%20v1.03.zip
 
 # Note:
 This is an ongoing project, I am making an application for windows on behalf of a friend. I am experimenting with tkinter and other libraries.
