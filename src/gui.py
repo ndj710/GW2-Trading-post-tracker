@@ -21,7 +21,7 @@ customtkinter.set_default_color_theme("blue")
 class Gui(customtkinter.CTk):
     def __init__(self, trader):
         super().__init__()
-        self.width = 1293
+        self.width = 1240
         self.height = 720        
         self.withdraw()
         self.title("GW2 Trading Tracker")
@@ -69,7 +69,7 @@ class Gui(customtkinter.CTk):
         )
         
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set, width=1060, height=720, highlightthickness=0, bg='gray20')
+        canvas.configure(yscrollcommand=scrollbar.set, width=1010, height=720, highlightthickness=0, bg='gray20')
         canvas.grid(row=0, column=0)
         scrollbar.grid(row=0, column=1, sticky='ns')
         
@@ -312,6 +312,10 @@ class Gui(customtkinter.CTk):
 
 
     def listSingleItem(self, item):
+        for itemIdIndex in range(len(self.trader.itemIds)):
+            if self.trader.itemIds[itemIdIndex] == item:
+                item = item + [itemIdIndex]
+                self.trader.itemIds[itemIdIndex] = item        
         if item[0] not in self.trader.currentPrices: 
             self.trader.currentPrices[item[0]] = [[tkinter.StringVar(value='...'), tkinter.StringVar(value='...'), tkinter.StringVar(value='...')], 
                                                   [tkinter.StringVar(value='...'), tkinter.StringVar(value='...'), tkinter.StringVar(value='...')]]
@@ -331,49 +335,74 @@ class Gui(customtkinter.CTk):
         self.itemFrames.append(tkinter.Frame(master=self.scrollable_frame, bg='gray20'))
         self.itemFrames[self.count].grid(row=self.count, column=0, sticky="nswe")
         
+        def changeOrder(widget1,widget2,initial):
+            target=widget1.grid_info()
+            widget1.grid(row=initial['row'], column=initial['column'])
+            widget2.grid(row=target['row'], column=target['column'])
         
-        #def on_drag_start(event):
-            #print('event', event)
-            #widget = event.widget
-            #print(widget)
-            #widget._drag_start_x = event.x
-            #widget._drag_start_y = event.y
-        
-        #def on_drag_motion(event):
-            #widget = event.widget
-            #x = widget.winfo_x() - widget._drag_start_x + event.x
-            #y = widget.winfo_y() - widget._drag_start_y + event.y
-            #widget.place(x=x, y=y)        
-        
-        #self.itemFrames[self.count].bind("<Button-1>", on_drag_start)
-        #self.itemFrames[self.count].bind("<B1-Motion>", on_drag_motion)
+        def on_click(event, frameWidget):
+            burgerWidget = event.widget
+            start=(event.x,event.y)
+            grid_info=frameWidget.grid_info()
+            burgerWidget.bind("<B1-Motion>",lambda event:drag_motion(event, frameWidget,start))
+            burgerWidget.bind("<ButtonRelease-1>",lambda event:drag_release(event, frameWidget,grid_info))
 
         
+        def drag_motion(event, frameWidget,start):
+            x = frameWidget.winfo_x()+event.x-start[0]
+            y = frameWidget.winfo_y()+event.y-start[1] 
+            frameWidget.lift()
+            frameWidget.place(x=x,y=y)
         
-        self.itemFrames[self.count].columnconfigure(0, minsize=40) # id
-        self.itemFrames[self.count].columnconfigure(1, minsize=350) # name
-        self.itemFrames[self.count].columnconfigure(2, minsize=44) # buysell
-        self.itemFrames[self.count].columnconfigure(3, minsize=120) # target
-        self.itemFrames[self.count].columnconfigure(4, minsize=40) # save
-        self.itemFrames[self.count].columnconfigure(5, minsize=180) # current   
-        self.itemFrames[self.count].columnconfigure(6, minsize=40) # noti
-        self.itemFrames[self.count].columnconfigure(7, minsize=40) # delete                   
+        def drag_release(event,widget,grid_info):
+            try:
+                widget.lower()
+                x,y=self.scrollable_frame.winfo_pointerxy()
+                target_widget=self.scrollable_frame.winfo_containing(x,y)
+                tsw = str(target_widget).split('.')
+                target_str_widget = '{}.{}.{}.{}.{}'.format(tsw[0], tsw[1], tsw[2], tsw[3], tsw[4])
+                widget.lift()
+                for x in self.itemFrames:
+                    str_x = str(x).split(' ')[0]
+                    if str_x == target_str_widget:
+                        changeOrder(x,widget,grid_info)
+                        return
+                widget.grid(row=grid_info['row'], column=grid_info['column'])
+            except:
+                widget.lift()
+                widget.grid(row=grid_info['row'], column=grid_info['column'])
+    
+      
         
+        self.itemFrames[self.count].columnconfigure(0, minsize=10) # hamb
+        self.itemFrames[self.count].columnconfigure(1, minsize=80) # id
+        self.itemFrames[self.count].columnconfigure(2, minsize=350) # name
+        self.itemFrames[self.count].columnconfigure(3, minsize=44) # buysell
+        self.itemFrames[self.count].columnconfigure(4, minsize=120) # target
+        self.itemFrames[self.count].columnconfigure(5, minsize=40) # save   
+        self.itemFrames[self.count].columnconfigure(6, minsize=180) # current
+        self.itemFrames[self.count].columnconfigure(7, minsize=40) # noti                   
+        self.itemFrames[self.count].columnconfigure(8, minsize=40) # delete       
         # ITEM ID AND NAME
+        burgerMover = tkinter.Label(master=self.itemFrames[self.count], text=u"\u2630", width=1, bg='gray20', fg='white', font=('Arial Unicode MS',10))
+        burgerMover.grid(row=0, column=0, padx=1, sticky='w')
+        burgerMover.bind("<Button-1>", lambda e: on_click(e, self.itemFrames[item[4]]))
+        
         itemIdLabel = customtkinter.CTkButton(master=self.itemFrames[self.count],
                                               text=item[0],
+                                              width=1,
                                               command=lambda i=item[0]: webbrowser.open("https://www.gw2bltc.com/en/item/" + i, new=0, autoraise=True))
         itemIdLabel.configure(fg_color='gray20')
-        itemIdLabel.grid(row=0, column=0, pady=2, padx=2, sticky='w')
+        itemIdLabel.grid(row=0, column=1, pady=2, padx=2, sticky='we')
         
         itemLabel = customtkinter.CTkLabel(master=self.itemFrames[self.count],
                                               text=self.trader.itemData[int(item[0])],
                                               width=1)
-        itemLabel.grid(row=0, column=1, pady=2, padx=2, sticky='w')  
+        itemLabel.grid(row=0, column=2, pady=2, padx=2, sticky='w')  
         
         # BUY SELL BUTTONS
         buySellButtons = customtkinter.CTkFrame(master=self.itemFrames[self.count])
-        buySellButtons.grid(row=0, column=2, pady=2, padx=2, sticky='w')
+        buySellButtons.grid(row=0, column=3, pady=2, padx=2, sticky='w')
         buyButton = customtkinter.CTkButton(master=buySellButtons,
                                          width=20,
                                          command=lambda i=self.count, it=item, b='buy': checkbox_event(i, it, b),
@@ -390,7 +419,7 @@ class Gui(customtkinter.CTk):
         
         pricevcmd = (self.register(self.digitcheck))
         priceFrame = customtkinter.CTkFrame(master=self.itemFrames[self.count])
-        priceFrame.grid(row=0, column=3)
+        priceFrame.grid(row=0, column=4)
         
         priceGold = customtkinter.CTkEntry(master=priceFrame,
                                            placeholder_text='Gld',
@@ -429,16 +458,12 @@ class Gui(customtkinter.CTk):
         def callback(index, v, *args):
             invalid = ['Gld', 'Slv', 'Cpr', '']
             if v.get() not in invalid:
-                self.updatePrices[index].grid(row=0, column=4, pady=2, padx=2)  
+                self.updatePrices[index].grid(row=0, column=5, pady=2, padx=2)  
         copper_var.trace_add('write', lambda *args, i=self.count, v=copper_var: callback(i, v, *args))
         silver_var.trace_add('write', lambda *args, i=self.count, v=silver_var: callback(i, v, *args))
         gold_var.trace_add('write', lambda *args, i=self.count, v=gold_var: callback(i, v, *args))    
         
         # Notifactions
-        for itemIdIndex in range(len(self.trader.itemIds)):
-            if self.trader.itemIds[itemIdIndex] == item:
-                item = item + [itemIdIndex]
-                self.trader.itemIds[itemIdIndex] = item
                 
         self.trader.speaker.append(tkinter.StringVar(value=self.notiFalse))
         self.trader.alertButtons.append(customtkinter.CTkButton(master=self.itemFrames[self.count],
@@ -448,7 +473,7 @@ class Gui(customtkinter.CTk):
                                                 fg_color=("#A7171A"),
                                                 notif=True,
                                                 command=lambda i=item, pg=priceGold, ps=priceSilver, pc=priceCopper: self.changeMute(i, pg, ps, pc)))
-        self.trader.alertButtons[self.count].grid(row=0, column=6, pady=2, padx=2)             
+        self.trader.alertButtons[self.count].grid(row=0, column=7, pady=2, padx=2)             
         
         # Delete item
         deleteItemButton = customtkinter.CTkButton(master=self.itemFrames[self.count],
@@ -458,7 +483,7 @@ class Gui(customtkinter.CTk):
                                             height=35,
                                             fg_color=("gray75", "gray30"),
                                             command=lambda i=self.count, it=item: self.deleteItem(i, it))
-        deleteItemButton.grid(row=0, column=7, sticky='s', pady=10, padx=(10, 10))
+        deleteItemButton.grid(row=0, column=8, sticky='s', pady=10, padx=(10, 10))
         
         def checkbox_event(index, item, setting, initial=None):
             limitCount = 0
@@ -471,7 +496,7 @@ class Gui(customtkinter.CTk):
             elif limitCount >= 2 and initial == None:
                 return
             currentPriceFrame = customtkinter.CTkFrame(master=self.itemFrames[index])
-            currentPriceFrame.grid(row=0, column=5, pady=2, padx=2, sticky='w') 
+            currentPriceFrame.grid(row=0, column=6, pady=2, padx=2, sticky='w') 
             if setting == 'sell':
                 gold = customtkinter.CTkLabel(master=currentPriceFrame,
                                               width=1,
@@ -537,6 +562,7 @@ class Gui(customtkinter.CTk):
                     buyButton.configure(state=tkinter.DISABLED,
                                                      fg_color="#315399")
         checkbox_event(self.count, item, item[1], True)
+
         
 if __name__ == "__main__":
     tradeObject = TradePostTracker()

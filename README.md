@@ -1,4 +1,4 @@
-# Download link for v1.02 (latest)
+# Download link for v1.03 (latest)
 If updating from v0.85 or lower, delete all previous files apart from your config. Run the EXE in the same folder as your config.
 The directoy should look as follows:
 * GW2TT.exe
@@ -22,6 +22,15 @@ GWT22 is a windows application which allows the user to enter an item ID and the
 
 
 ### Changelog:
+#### Version 1.03
+
+Changes:
+*	Can now drag items and swap with other items using the hamburger on left (Currently does NOT save positions on app close)
+
+Bug fixes:
+*	Pressing add on blank item ID entry field will no longer trigger an error in logs
+*	Bug where changing price to 0 while tracking item (green bell) would cause a crash
+
 
 #### Version 1.02
 
